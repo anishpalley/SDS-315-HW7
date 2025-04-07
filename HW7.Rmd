@@ -1,0 +1,247 @@
+---
+title: "HW 7"
+author: "Anish Palley, ap65675, https://github.com/anishpalley/SDS-315-HW7"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_depth: '3'
+    df_print: paged
+  pdf_document: default
+---
+
+```{r global options, include=FALSE, echo=FALSE}
+knitr::opts_chunk$set(echo = FALSE, # show the code
+                      eval = TRUE, # run the code
+                      warning = FALSE, # show warning messages
+                      message = FALSE, # show basic messages
+                      fig.align = "center"
+                      )
+#Uploading necessary packages
+library(tidyverse)
+library(ggplot2)
+library(rvest)
+library(dplyr)
+library(plotly)
+library(mosaic)
+library(MatchIt)
+```
+
+### Problem 1: Armfolding
+
+```{r}
+armfold <- read_csv("armfold.csv")
+```
+
+#### Part A.
+```{r}
+#Number of male and female students in the dataset
+male = nrow(armfold[armfold$Sex == "Male", ])
+female = nrow(armfold[armfold$Sex == "Female", ])
+
+```
+
+```{r}
+#Sample proportion of males who folded their left arm on top
+male_left <- nrow(armfold[armfold$Sex == "Male" & armfold$LonR_fold == 1, ])
+male_prop <- male_left/male
+```
+
+```{r}
+#Sample proportion of female who folded their left arm on top
+female_left <-  nrow(armfold[armfold$Sex == "Female" & armfold$LonR_fold == 1, ])
+female_prop <- female_left/female
+```
+
+```{r}
+# Wanted to double check
+prop(LonR_fold~ Sex, data = armfold)
+```
+
+#### Part B.
+```{r}
+#Observed difference in proportions between the two groups (males minus females)
+observed_diff <- male_prop - female_prop
+observed_diff
+```
+
+#### Part C.
+```{r}
+# R built-in function
+prop.test(LonR_fold ~ Sex, data = armfold)
+```
+```{r}
+# By hand
+standard_error <- sqrt((male_prop*(1-male_prop))/male+(female_prop*(1-female_prop))/female)
+z = 1.96
+lower_bound <- observed_diff - z * standard_error
+upper_bound  <- observed_diff + z * standard_error
+lower_bound
+upper_bound
+```
+#### Part D.
+Confidence interval:
+If we were to construct a 95% confidence interval for the difference in proportions between males and female who fold their left arm on top, then we would expect that that difference in proportions is between -.093 and 0.180.
+
+#### Part E.
+The standard error is the typical variation from the mean of the sampling distribution of the difference in proportions between males and female who fold their left arm on top.
+
+#### Part F.
+The Sampling Distribution refers to the distribution of difference in proportions between males and female who fold their left arm on top we expect to see from the random process that generated our data. The proportion of males who fold their left arm on top and proportion of females who fold their left arm on top changes with each sample, so the difference in proportions between males and female who fold their left arm on top varies as well. The sample size of males and females stays the same in the sampling distribution.
+
+#### Part G.
+The Central Limit Theorem states that as long as the sample size is large enough, the statistical fluctuations in the sample difference in proportions will be approximately normal, allowing us to create sampling distributions of the difference in sample proportions between males and female who fold their left arm on top.
+
+#### Part H.
+No, even if a 95% confidence interval for the difference in proportions between males and female who fold their left arm on top was between -0.01 and 0.30, you cannot claim that "there's no sex difference in arm folding". Statistical and practical significance are different, and the interval containing 0 could be due to the sample size being too small to rule out for statistical fluctuations, leading to a need for a bigger study.
+
+#### Part I.
+If we repeated this experiment many times with different random samples of university students, the confidence intervals would be different across the samples since the proportions of males and females who fold their left arm on top will differ each time due to a different set of students being chosen. If were to repeat this difference in proportions between males and female who fold their left arm on top for the rest of our lives, and we constructed 95% confidence intervals for every difference in proportions we calculated, then we would expect that those intervals cover the true difference in proportions between males and females who fold their left arm on top at least 95% of the time.
+
+### Problem 2: Get out the vote
+```{r}
+turnout <- read_csv("turnout.csv")
+```
+#### Part A.
+```{r}
+#Proportion of those receiving a GOTV call who voted in 1998
+gotv_1998 <- nrow(turnout[turnout$voted1998 == 1 & turnout$GOTV_call == 1,])
+gotv_total <- nrow(turnout[turnout$GOTV_call == 1,])
+gotv_prop <- gotv_1998/gotv_total
+```
+
+```{r}
+#Sample proportion of those not receiving a GOTV call who voted in 1998
+not_gotv_1998 <- nrow(turnout[turnout$voted1998 == 1 & turnout$GOTV_call == 0,])
+not_gotv_total <- nrow(turnout[turnout$GOTV_call == 0,])
+not_gotv_prop <- not_gotv_1998/not_gotv_total
+```
+
+```{r}
+# Wanted to double check
+prop(voted1998 ~ GOTV_call, data = turnout)
+```
+```{r}
+#Difference in proportions
+prop.test(voted1998 ~ GOTV_call, data = turnout)
+```
+#### Part B.
+```{r}
+#Voted 1996
+voted_1996_summary = turnout %>%
+  group_by(voted1996) %>%
+  summarize(mean_voted_1996 = mean(GOTV_call))
+
+# the numbers
+voted_1996_summary
+
+# a boxplot that shows both between and within-group variation
+ggplot(turnout) +
+  geom_boxplot(aes(x=factor(voted1996), y = voted1998))
+
+#Confidence interval
+prop.test(voted1996 ~ GOTV_call, data = turnout)
+```
+```{r}
+#Age
+ggplot(turnout) +
+  geom_histogram(aes(x=AGE, y=..density.., binwidth=2)) +
+  facet_wrap(~GOTV_call, nrow=2)
+
+#Confidence interval
+t.test(AGE ~ GOTV_call, data = turnout)
+```
+```{r}
+#Voted 1996
+majorpty_summary = turnout %>%
+  group_by(MAJORPTY) %>%
+  summarize(mean_majorpty = mean(GOTV_call))
+
+# the numbers
+majorpty_summary
+
+# a boxplot that shows both between and within-group variation
+ggplot(turnout) +
+  geom_boxplot(aes(x=factor(MAJORPTY), y = voted1998))
+
+#Confidence interval
+prop.test(MAJORPTY ~ GOTV_call, data = turnout)
+
+```
+#### Part C.
+```{r}
+gotv_match = matchit(GOTV_call ~ factor(voted1996) + AGE + factor(MAJORPTY), data = turnout, ratio=5)
+summary(gotv_match)
+```
+```{r}
+gotv_matched = match.data(gotv_match)
+```
+
+```{r}
+#Proportion of those receiving a GOTV call who voted in 1998
+gotv_1998_matched <- nrow(gotv_matched[gotv_matched$voted1998 == 1 & gotv_matched$GOTV_call == 1,])
+gotv_total_matched <- nrow(gotv_matched[gotv_matched$GOTV_call == 1,])
+gotv_prop_matched <- gotv_1998_matched/gotv_total_matched
+```
+
+```{r}
+#Sample proportion of those not receiving a GOTV call who voted in 1998
+not_gotv_1998_matched <- nrow(gotv_matched[gotv_matched$voted1998 == 1 & gotv_matched$GOTV_call == 0,])
+not_gotv_total_matched <- nrow(gotv_matched[gotv_matched$GOTV_call == 0,])
+not_gotv_prop_matched <- not_gotv_1998_matched/not_gotv_total_matched
+```
+
+```{r}
+# Wanted to double check
+prop(voted1998 ~ GOTV_call, data = gotv_matched)
+```
+```{r}
+#Voted 1996 matched
+voted_1996_summary_matched = gotv_matched %>%
+  group_by(voted1996) %>%
+  summarize(mean_voted_1996_matched = mean(GOTV_call))
+
+# the numbers
+voted_1996_summary_matched
+
+# a boxplot that shows both between and within-group variation
+ggplot(gotv_matched) +
+  geom_boxplot(aes(x=factor(voted1996), y = voted1998))
+
+#Confidence interval
+prop.test(voted1996 ~ GOTV_call, data = gotv_matched)
+```
+
+```{r}
+#Age matched
+ggplot(gotv_matched) +
+  geom_histogram(aes(x=AGE, y=..density.., binwidth=2)) +
+  facet_wrap(~GOTV_call, nrow=2)
+
+#Confidence interval
+t.test(AGE ~ GOTV_call, data = gotv_matched)
+```
+
+```{r}
+#Voted 1996
+majorpty_summary_matched = gotv_matched %>%
+  group_by(MAJORPTY) %>%
+  summarize(mean_majorpty_matched = mean(GOTV_call))
+
+# the numbers
+majorpty_summary_matched
+
+# a boxplot that shows both between and within-group variation
+ggplot(gotv_matched) +
+  geom_boxplot(aes(x=factor(MAJORPTY), y = voted1998))
+
+#Confidence interval
+prop.test(MAJORPTY ~ GOTV_call, data = gotv_matched)
+
+```
+
+```{r}
+#Difference in proportions
+prop.test(voted1998 ~ GOTV_call, data = gotv_matched)
+```
+We are 95% confident that the difference in proportions of people voting in 1998 who received a GOTV call versus those who didn't is between 0.010 and 0.147. The entire confidence interval is above 0, indicating a positive difference in proportions of people voting in 1998 who received a GOTV call versus those who didn't, suggesting that a GOTV call increases the likelihood of voting in the 1998 election. Since the confidence interval does not contain 0, we have statistical evidence to suggest that receiving a GOTV call is associated with a higher probability of voting in 1998. Therefore, we can conclude that GOTV had a positive effect on voter turnout in the 1998 election.
