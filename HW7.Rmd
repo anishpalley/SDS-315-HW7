@@ -126,48 +126,49 @@ prop(voted1998 ~ GOTV_call, data = turnout)
 prop.test(voted1998 ~ GOTV_call, data = turnout)
 ```
 #### Part B.
+
+##### Voted 1996 Confounder
 ```{r}
 #Voted 1996
 voted_1996_summary = turnout %>%
-  group_by(voted1996) %>%
-  summarize(mean_voted_1996 = mean(GOTV_call))
+  group_by(GOTV_call) %>%
+  summarize(mean_voted_1996 = mean(voted1996))
 
-# the numbers
+# The summary
 voted_1996_summary
-
-# a boxplot that shows both between and within-group variation
-ggplot(turnout) +
-  geom_boxplot(aes(x=factor(voted1996), y = voted1998))
 
 #Confidence interval
 prop.test(voted1996 ~ GOTV_call, data = turnout)
 ```
+
+##### Age Confounder
 ```{r}
 #Age
 ggplot(turnout) +
   geom_histogram(aes(x=AGE, y=..density.., binwidth=2)) +
-  facet_wrap(~GOTV_call, nrow=2)
+  facet_wrap(~GOTV_call, nrow =2)
 
 #Confidence interval
 t.test(AGE ~ GOTV_call, data = turnout)
 ```
-```{r}
-#Voted 1996
-majorpty_summary = turnout %>%
-  group_by(MAJORPTY) %>%
-  summarize(mean_majorpty = mean(GOTV_call))
 
-# the numbers
+##### Major Party Confounder
+```{r}
+#Major Party
+majorpty_summary = turnout %>%
+  group_by(GOTV_call) %>%
+  summarize(mean_majorpty = mean(MAJORPTY))
+
+# the summary
 majorpty_summary
 
-# a boxplot that shows both between and within-group variation
-ggplot(turnout) +
-  geom_boxplot(aes(x=factor(MAJORPTY), y = voted1998))
 
 #Confidence interval
 prop.test(MAJORPTY ~ GOTV_call, data = turnout)
 
 ```
+The proportions of people who voted in 1996 and those affiliated with a major party and the distribution of age along with their respective confidence intervals suggest that all three variables are confounders. These variables are associated with both receiving a GOTV call and voting in 1998, which means that the difference observed in Part A does not represent the true causal effect of the GOTV call alone.
+
 #### Part C.
 ```{r}
 gotv_match = matchit(GOTV_call ~ factor(voted1996) + AGE + factor(MAJORPTY), data = turnout, ratio=5)
@@ -198,15 +199,12 @@ prop(voted1998 ~ GOTV_call, data = gotv_matched)
 ```{r}
 #Voted 1996 matched
 voted_1996_summary_matched = gotv_matched %>%
-  group_by(voted1996) %>%
-  summarize(mean_voted_1996_matched = mean(GOTV_call))
+  group_by(GOTV_call) %>%
+  summarize(mean_voted_1996_matched = mean(voted1996))
 
 # the numbers
 voted_1996_summary_matched
 
-# a boxplot that shows both between and within-group variation
-ggplot(gotv_matched) +
-  geom_boxplot(aes(x=factor(voted1996), y = voted1998))
 
 #Confidence interval
 prop.test(voted1996 ~ GOTV_call, data = gotv_matched)
@@ -223,17 +221,14 @@ t.test(AGE ~ GOTV_call, data = gotv_matched)
 ```
 
 ```{r}
-#Voted 1996
+#Major Party
 majorpty_summary_matched = gotv_matched %>%
-  group_by(MAJORPTY) %>%
-  summarize(mean_majorpty_matched = mean(GOTV_call))
+  group_by(GOTV_call) %>%
+  summarize(mean_majorpty_matched = mean(MAJORPTY))
 
 # the numbers
 majorpty_summary_matched
 
-# a boxplot that shows both between and within-group variation
-ggplot(gotv_matched) +
-  geom_boxplot(aes(x=factor(MAJORPTY), y = voted1998))
 
 #Confidence interval
 prop.test(MAJORPTY ~ GOTV_call, data = gotv_matched)
